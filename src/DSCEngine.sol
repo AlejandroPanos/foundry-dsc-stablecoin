@@ -352,7 +352,9 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    /* Public functions */
+    /* ============================================================ */
+    /* Public functions                                             */
+    /* ============================================================ */
     /**
      * @notice Function that allows anyone to calculate the value in USD of
      * a specific token and amount.
@@ -404,5 +406,50 @@ contract DSCEngine is ReentrancyGuard {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
         (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
         return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
+    }
+
+    /* ============================================================ */
+    /* Getter functions                                             */
+    /* ============================================================ */
+    /**
+     * @notice Returns the total DSC minted and the total collateral value in USD for a given user.
+     * @param user The address of the user to retrieve account information for.
+     * @return totalDscMinted The total amount of DSC tokens minted by the user.
+     * @return collateralValueInUsd The total USD value of all collateral deposited by the user.
+     * @dev Delegates to the internal _getAccountInformation() function.
+     */
+    function getAccountInformation(address user)
+        external
+        view
+        returns (uint256 totalDscMinted, uint256 collateralValueInUsd)
+    {
+        (totalDscMinted, collateralValueInUsd) = _getAccountInformation(user);
+    }
+
+    /**
+     * @notice Returns the list of all tokens accepted as collateral by the engine.
+     * @return address[] An array of collateral token addresses.
+     */
+    function getCollateralTokens() external view returns (address[] memory) {
+        return s_collateralTokens;
+    }
+
+    /**
+     * @notice Returns the amount of a specific collateral token deposited by a user.
+     * @param user The address of the user to check.
+     * @param token The address of the collateral token to check.
+     * @return uint256 The amount of the specified collateral token deposited by the user.
+     */
+    function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
+        return s_collateralDeposited[user][token];
+    }
+
+    /**
+     * @notice Returns the Chainlink price feed address for a given collateral token.
+     * @param token The address of the collateral token.
+     * @return address The address of the Chainlink price feed for the given token.
+     */
+    function getCollateralTokenPriceFeed(address token) external view returns (address) {
+        return s_priceFeeds[token];
     }
 }
