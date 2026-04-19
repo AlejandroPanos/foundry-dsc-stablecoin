@@ -269,6 +269,59 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
+    /**
+     * @notice Function that allows anyone to calculate the value in USD of
+     * a specific token and amount.
+     * @dev Uses the OracleLib.sol library to check for stale data. It will revert
+     * if the data returned is stale.
+     * @dev Uses the AggregatorV3Interface from chainlink-evm.
+     * @param token The address of the token to be checked.
+     * @param amount The amount of token passed.
+     * @return uint256 Returns the USD value of the amount of token passed.
+     */
+    function getUsdValue(address token, uint256 amount) public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
+        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
+        return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
+    }
+
+    /**
+     * @notice This function gets called to get the total amount of collateral
+     * value in USD deposited by a specific user.
+     * @dev Calls the getUsdValue() function to get the value in USD.
+     * @param user The address of the user we want to get the USD collateral value for.
+     * @return totalCollateralInUsd The total amount of collateral deposited by
+     * the user in USD.
+     */
+    function getCollateralInUsd(address user) public view returns (uint256 totalCollateralInUsd) {
+        for (uint256 i = 0; i < s_collateralTokens.length; i++) {
+            address token = s_collateralTokens[i];
+            uint256 amount = s_collateralAmount[user][token];
+            totalCollateralInUsd += getUsdValue(token, amount);
+        }
+
+        return totalCollateralInUsd;
+    }
+
+    /**
+     * @notice Converts a USD amount into the equivalent amount of a collateral token.
+     * @notice Used during liquidation to calculate how much collateral to award
+     * the liquidator in exchange for the DSC they burn.
+     * @param token The address of the collateral token to convert to.
+     * @param usdAmountInWei The USD amount to convert, expressed in wei.
+     * @return uint256 The equivalent amount of the collateral token.
+     * @dev Uses the Chainlink price feed for the given token to determine
+     * the current exchange rate.
+     * @dev Uses staleCheckLatestRound() from OracleLib instead of
+     * latestRoundData() directly to revert if the price feed data is stale,
+     * protecting the system against oracle manipulation or outages.
+     */
+    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
+        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
+        return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
+    }
+
     /* ============================================================ */
     /* Internal and private functions                               */
     /* ============================================================ */
@@ -346,7 +399,7 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /**
-     * @notice Reverts with custom error is the health factor of the user
+     * @notice Reverts with custom error if the health factor of the user
      * is broken. The health factor of a user is broken if the user is too close
      * to liquidation.
      * @param user The user for which we want to check the health factor.
@@ -356,62 +409,6 @@ contract DSCEngine is ReentrancyGuard {
         if (healthFactor < MIN_HEALTH_FACTOR) {
             revert DSCEngine__HealthFactorBelowMinimum();
         }
-    }
-
-    /* ============================================================ */
-    /* Public functions                                             */
-    /* ============================================================ */
-    /**
-     * @notice Function that allows anyone to calculate the value in USD of
-     * a specific token and amount.
-     * @dev Uses the OracleLib.sol library to check for stale data. It will revert
-     * if the data returned is stale.
-     * @dev Uses the AggregatorV3Interface from chainlink-evm.
-     * @param token The address of the token to be checked.
-     * @param amount The amount of token passed.
-     * @return uint256 Returns the USD value of the amount of token passed.
-     */
-    function getUsdValue(address token, uint256 amount) public view returns (uint256) {
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
-        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
-        return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
-    }
-
-    /**
-     * @notice This function gets called to get the total amount of collateral
-     * value in USD deposited by a specific user.
-     * @dev Calls the getUsdValue() function to get the value in USD.
-     * @param user The address of the user we want to get the USD collateral value for.
-     * @return totalCollateralInUsd The total amount of collateral deposited by
-     * the user in USD.
-     */
-    function getCollateralInUsd(address user) public view returns (uint256 totalCollateralInUsd) {
-        for (uint256 i = 0; i < s_collateralTokens.length; i++) {
-            address token = s_collateralTokens[i];
-            uint256 amount = s_collateralAmount[user][token];
-            totalCollateralInUsd += getUsdValue(token, amount);
-        }
-
-        return totalCollateralInUsd;
-    }
-
-    /**
-     * @notice Converts a USD amount into the equivalent amount of a collateral token.
-     * @notice Used during liquidation to calculate how much collateral to award
-     * the liquidator in exchange for the DSC they burn.
-     * @param token The address of the collateral token to convert to.
-     * @param usdAmountInWei The USD amount to convert, expressed in wei.
-     * @return uint256 The equivalent amount of the collateral token.
-     * @dev Uses the Chainlink price feed for the given token to determine
-     * the current exchange rate.
-     * @dev Uses staleCheckLatestRound() from OracleLib instead of
-     * latestRoundData() directly to revert if the price feed data is stale,
-     * protecting the system against oracle manipulation or outages.
-     */
-    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
-        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
-        return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 
     /* ============================================================ */
