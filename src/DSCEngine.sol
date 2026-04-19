@@ -181,7 +181,20 @@ contract DSCEngine is ReentrancyGuard {
         mintDsc(amount);
     }
 
-    function redeemCollateral() public {}
+    /**
+     * @notice This function is called when the liquidating user is
+     * the same as the liquidator. This means that one user liquidates
+     * its own position in the protocol.
+     * @dev Uses the nonReentrant modifier from ReentrancyGuard.sol
+     * @dev Calls the private _redeemCollateral() function.
+     * @dev Calls the internal _revertIfHealthFactorIsBroken() function.
+     * @param token The address of the token used as collateral.
+     * @param amount The amount of collateral to redeem.
+     */
+    function redeemCollateral(address token, uint256 amount) public moreThanZero(amount) nonReentrant {
+        _redeemCollateral(msg.sender, msg.sender, token, amount);
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     function burnDsc() public {}
 
