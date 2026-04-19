@@ -121,6 +121,14 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /* Functions */
+    /**
+     * @dev This funciton deposits collateral in the engine contract. The collateral
+     * will be locked in the engine contract until the collateral is redeemed.
+     * @dev Uses the nonReentrant modifier from the ReentrancyGuard.sol contract
+     * imported from the OpenZeppelin contract library.
+     * @param tokenAddress The address of the token used as collateral.
+     * @param collateralAmount The amount of collateral deposited.
+     */
     function depositCollateral(address tokenAddress, uint256 collateralAmount)
         public
         moreThanZero(collateralAmount)
