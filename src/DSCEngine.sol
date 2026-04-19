@@ -196,7 +196,19 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function burnDsc() public {}
+    /**
+     * @notice Burns a specified amount of DSC tokens to improve the caller's health factor.
+     * @notice Call this function if your health factor is at risk of falling below
+     * the minimum threshold and you want to reduce your debt position.
+     * @param amount The amount of DSC tokens to burn.
+     * @dev Calls the internal _burnDsc() function with msg.sender as both the
+     * onBehalfOf and from parameters since the user is burning their own tokens.
+     * @dev Reverts if the health factor is broken after burning.
+     */
+    function burnDsc(uint256 amount) public moreThanZero(amount) {
+        _burnDsc(amount, msg.sender, msg.sender);
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
 
     function redeemCollateralForDsc() public {}
 
