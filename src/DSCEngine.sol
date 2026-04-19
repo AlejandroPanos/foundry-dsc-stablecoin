@@ -226,8 +226,6 @@ contract DSCEngine is ReentrancyGuard {
         redeemCollateral(token, collateralAmount);
     }
 
-    function liquidate() public {}
-
     /* ============================================================ */
     /* Internal and private functions                               */
     /* ============================================================ */
@@ -345,5 +343,24 @@ contract DSCEngine is ReentrancyGuard {
         }
 
         return totalCollateralInUsd;
+    }
+
+    /**
+     * @notice Converts a USD amount into the equivalent amount of a collateral token.
+     * @notice Used during liquidation to calculate how much collateral to award
+     * the liquidator in exchange for the DSC they burn.
+     * @param token The address of the collateral token to convert to.
+     * @param usdAmountInWei The USD amount to convert, expressed in wei.
+     * @return uint256 The equivalent amount of the collateral token.
+     * @dev Uses the Chainlink price feed for the given token to determine
+     * the current exchange rate.
+     * @dev Uses staleCheckLatestRoundData() from OracleLib instead of
+     * latestRoundData() directly to revert if the price feed data is stale,
+     * protecting the system against oracle manipulation or outages.
+     */
+    function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
+        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
+        return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 }
