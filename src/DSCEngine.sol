@@ -38,6 +38,8 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__AmountShouldBeMoreThanZero();
     error DSCEngine__PriceFeedNotAllowed();
     error DSCEngine__ERC20TransferFailed();
+    error DSCEngine__MintFailed();
+    error DSCEngine__HealthFactorBelowMinimum();
 
     /* ============================================================ */
     /* State variables                                              */
@@ -144,7 +146,17 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function mintDsc() public {}
+    function mintDsc(uint256 amount) public moreThanZero(amount) nonReentrant {
+        s_amountMinted[msg.sender] += amount;
+
+        _revertIfHealthFactorIsBroken(msg.sender);
+
+        bool minted = i_dsc.mint(msg.sender, amount);
+
+        if (!minted) {
+            revert DSCEngine__MintFailed();
+        }
+    }
 
     function depositCollateralAndMint() public {}
 
@@ -156,6 +168,40 @@ contract DSCEngine is ReentrancyGuard {
 
     function liquidate() public {}
 
-    /* Internal functions */
-    function _revertIfHealthFactorIsBroken() internal {}
+    /* Internal & private functions */
+    function _getAccountInformation(address user) private returns (uint256, uint256) {
+        uint256 totalMinted = s_amountMinted[user];
+        uint256 collateralValueInUsd = getCollateralInUsd(user);
+        return (totalMinted, collateralValueInUsd);
+    }
+
+    function _healthFactor(address user) private returns (uint256) {
+        (uint256 totalMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+        uint256 adjustedCollateral = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
+        return (adjustedCollateral * PRECISION) / totalMinted;
+    }
+
+    function _revertIfHealthFactorIsBroken(address user) internal {
+        uint256 healthFactor = _healthFactor(user);
+        if (healthFactor < MIN_HEALTH_FACTOR) {
+            revert DSCEngine__HealthFactorBelowMinimum();
+        }
+    }
+
+    /* Public functions */
+    function getUsdValue(address token, uint256 amount) public returns (uint256) {
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
+        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
+        return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
+    }
+
+    function getCollateralInUsd(address user) public returns (uint256 totalCollateralInUsd) {
+        for (uint256 i = 0; i < s_collateralTokens.length; i++) {
+            address token = s_collateralTokens[i];
+            uint256 amount = s_collateralAmount[user][token];
+            totalCollateralInUsd += getUsdValue(token, amount);
+        }
+
+        return totalCollateralInUsd;
+    }
 }
