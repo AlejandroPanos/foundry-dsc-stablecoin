@@ -19,6 +19,16 @@ library OracleLib {
     uint256 private constant TIMEOUT = 3 hours;
 
     /* Functions */
+    /**
+     * @notice This function checks for stale data coming from the Chainlink feed.
+     * If it detects stale data, it will revert with a custom error.
+     * @param _feed The Chainlink feed passed to the function
+     * @return uint80 The ID of the round.
+     * @return int256 The answer for the round.
+     * @return uint256 Timestamp when round started.
+     * @return uint256 The timestamp from the most recent update.
+     * @return uint80 The round ID in which the answer was computed.
+     */
     function staleCheckLatestRound(AggregatorV3Interface _feed)
         public
         view
@@ -40,6 +50,10 @@ library OracleLib {
     }
 
     /* Getter functions */
+    /**
+     * @dev Returns the timout set in the library.
+     * @return uint256 Returns the value of the timeout variable.
+     */
     function getTimeout() external view returns (uint256) {
         return TIMEOUT;
     }
