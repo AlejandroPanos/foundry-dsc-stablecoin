@@ -210,7 +210,21 @@ contract DSCEngine is ReentrancyGuard {
         _revertIfHealthFactorIsBroken(msg.sender);
     }
 
-    function redeemCollateralForDsc() public {}
+    /**
+     * @notice Burns DSC and redeems collateral in a single transaction.
+     * @notice Use this function when you want to close or reduce your position
+     * by burning DSC and withdrawing collateral at the same time.
+     * @param token The address of the collateral token to redeem.
+     * @param collateralAmount The amount of collateral to withdraw.
+     * @param burnAmount The amount of DSC tokens to burn.
+     * @dev Calls burnDsc() before redeemCollateral() to ensure the health factor
+     * is improved before collateral is withdrawn, reducing the risk of reverting
+     * due to a broken health factor.
+     */
+    function redeemCollateralForDsc(address token, uint256 collateralAmount, uint256 burnAmount) external {
+        burnDsc(burnAmount);
+        redeemCollateral(token, collateralAmount);
+    }
 
     function liquidate() public {}
 
