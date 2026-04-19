@@ -167,7 +167,18 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
-    function depositCollateralAndMint() public {}
+    /**
+     * @notice External function that allows a user to deposit collateral and
+     * mint DSC tokens all at once.
+     * @dev Calls the depositCollateral() and mintDsc() function from this engine.
+     * @param tokenAddress The address of the token used as collateral.
+     * @param collateralAmount The amount of collateral deposited.
+     * @param amount The amount of DSC token to mint.
+     */
+    function depositCollateralAndMint(address tokenAddress, uint256 collateralAmount, uint256 amount) external {
+        depositCollateral(tokenAddress, collateralAmount);
+        mintDsc(amount);
+    }
 
     function redeemCollateral() public {}
 
