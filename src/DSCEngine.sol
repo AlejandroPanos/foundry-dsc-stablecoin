@@ -235,6 +235,26 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /**
+     * @notice This function burns a specific amount of DSC tokens.
+     * @notice This function is called both when a user burns their own DSC
+     * and when a liquidator burns DSC on behalf of an undercollateralised user.
+     * @dev Transfers DSC from `from` to the engine, reduces `onBehalfOf` debt record,
+     * then calls burn() on the DSC contract. The engine must be the owner of the DSC
+     * contract to have permission to call burn().
+     * @param amount The amount of DSC tokens to burn.
+     * @param onBehalfOf The user the liquidator burns tokens for in order to reduce debt.
+     * @param from The address from which the DSC tokens are transferred to the engine before burning.
+     */
+    function _burnDsc(uint256 amount, address onBehalfOf, address from) private {
+        s_amountMinted[onBehalfOf] -= amount;
+        bool success = i_dsc.transferFrom(from, address(this), amount);
+        if (!success) {
+            revert DSCEngine__ERC20TransferFailed();
+        }
+        i_dsc.burn(amount);
+    }
+
+    /**
      * @notice This is a private function that redeems collateral.
      * @notice The user that liquidates and the liquidator can be the same
      * address. If someone liquidates another user's position, they will not
