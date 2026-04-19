@@ -31,11 +31,27 @@ contract DSCEngine is ReentrancyGuard {
     using OracleLib for AggregatorV3Interface;
 
     /* Errors */
+    error DSCEngine__AddressesMustBeOfSameLength();
 
     /* State variables */
+    mapping(address token => address priceFeed) private s_tokenToPriceFeed;
+    address[] private s_collateralTokens;
+
+    DecentralisedStableCoin private immutable i_dsc;
 
     /* Constructor */
-    constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dsc) {}
+    constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dsc) {
+        if (tokenAddresses.length != priceFeedAddresses.length) {
+            revert DSCEngine__AddressesMustBeOfSameLength();
+        }
+
+        for (uint256 i = 0; i < tokenAddresses.length; i++) {
+            s_tokenToPriceFeed[tokenAddresses[i]] = priceFeedAddresses[i];
+            s_collateralTokens.push(tokenAddresses[i]);
+        }
+
+        i_dsc = DecentralisedStableCoin(dsc);
+    }
 
     /* Functions */
     function depositCollateral() public {}
