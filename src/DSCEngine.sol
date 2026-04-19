@@ -38,6 +38,7 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__AddressesMustBeOfSameLength();
     error DSCEngine__AmountShouldBeMoreThanZero();
     error DSCEngine__PriceFeedNotAllowed();
+    error DSCEngine__ERC20TransferFailed();
 
     /* ============================================================ */
     /* State variables                                              */
@@ -71,6 +72,11 @@ contract DSCEngine is ReentrancyGuard {
     address[] private s_collateralTokens;
 
     DecentralisedStableCoin private immutable i_dsc;
+
+    /* ============================================================ */
+    /* Events                                                       */
+    /* ============================================================ */
+    event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
 
     /* ============================================================ */
     /* Modifiers                                                    */
@@ -115,7 +121,20 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /* Functions */
-    function depositCollateral() public {}
+    function depositCollateral(address tokenAddress, uint256 collateralAmount)
+        public
+        moreThanZero(collateralAmount)
+        tokenAllowed(tokenAddress)
+        nonReentrant
+    {
+        s_collateralAmount[msg.sender][tokenAddress] += collateralAmount;
+        emit CollateralDeposited(msg.sender, tokenAddress, collateralAmount);
+
+        bool success = IERC20(tokenAddress).transferFrom(msg.sender, address(this), collateralAmount);
+        if (!success) {
+            revert DSCEngine__ERC20TransferFailed();
+        }
+    }
 
     function mintDsc() public {}
 
