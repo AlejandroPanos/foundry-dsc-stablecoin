@@ -226,6 +226,48 @@ contract DSCEngine is ReentrancyGuard {
         redeemCollateral(token, collateralAmount);
     }
 
+    /**
+     * @notice Liquidates an undercollateralised user by burning DSC on their behalf
+     * and receiving their collateral plus a liquidation bonus in return.
+     * @notice Anyone can call this function if a user's health factor falls below
+     * the minimum threshold, incentivised by the liquidation bonus.
+     * @param collateral The address of the collateral token to seize from the user.
+     * @param user The address of the undercollateralised user to liquidate.
+     * @param debtToCover The amount of DSC to burn in order to improve the user's health factor.
+     * @dev The liquidator must hold enough DSC to cover the debt amount being liquidated.
+     * @dev Calculates the equivalent collateral amount for the debt covered using
+     * the Chainlink price feed, then adds a 10% bonus on top as incentive.
+     * @dev Reverts if the user's health factor is not broken — healthy positions
+     * cannot be liquidated.
+     * @dev Reverts if the liquidation does not improve the user's health factor,
+     * preventing partial liquidations that leave the system worse off.
+     * @dev Reverts if the liquidator's own health factor is broken after liquidating,
+     * ensuring the liquidator does not put themselves at risk.
+     */
+    function liquidate(address collateral, address user, uint256 debtToCover)
+        external
+        moreThanZero(debtToCover)
+        nonReentrant
+    {
+        uint256 startingUserHealthFactor = _healthFactor(user);
+        if (startingUserHealthFactor >= MIN_HEALTH_FACTOR) {
+            revert DSCEngine__HealthFactorOk();
+        }
+
+        uint256 tokenAmountFromDebtCovered = getTokenAmountFromUsd(collateral, debtToCover);
+        uint256 bonusCollateral = (tokenAmountFromDebtCovered * LIQUIDATION_BONUS) / LIQUIDATION_PRECISION;
+        uint256 totalCollateralToRedeem = tokenAmountFromDebtCovered + bonusCollateral;
+        _redeemCollateral(user, msg.sender, collateral, totalCollateralToRedeem);
+        _burnDsc(debtToCover, user, msg.sender);
+
+        uint256 endingUserHealthFactor = _healthFactor(user);
+        if (endingUserHealthFactor <= startingUserHealthFactor) {
+            revert DSCEngine__HealthFactorNotImproved();
+        }
+
+        _revertIfHealthFactorIsBroken(msg.sender);
+    }
+
     /* ============================================================ */
     /* Internal and private functions                               */
     /* ============================================================ */
