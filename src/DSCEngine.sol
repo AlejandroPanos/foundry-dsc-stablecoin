@@ -148,6 +148,13 @@ contract DSCEngine is ReentrancyGuard {
         }
     }
 
+    /**
+     * @notice This function mints a specific amount of DSC token to a user.
+     * @dev Calls the internal _revertIfHealthFactorIsBroken() function which
+     * reverts with a custom error if the health factor of the user is broken.
+     * @dev Calls the nonReentrant modifier from ReentranctyGuard.sol
+     * @param amount The amount of DSC token to mint.
+     */
     function mintDsc(uint256 amount) public moreThanZero(amount) nonReentrant {
         s_amountMinted[msg.sender] += amount;
 
@@ -171,20 +178,43 @@ contract DSCEngine is ReentrancyGuard {
     function liquidate() public {}
 
     /* ============================================================ */
-    /* Internal and private functions                                */
+    /* Internal and private functions                               */
     /* ============================================================ */
+    /**
+     * @notice Gets the following information about a specific user:
+     * 1. The total amount minted.
+     * 2. The value of the user's collateral in USD
+     * @dev Calls the getCollateralInUsd() function to get the actual
+     * amount of collateral translated into USD.
+     * @param user The address of the user we want to check the information on.
+     * @return uint256 The total amount of DSC minted by the user.
+     * @return uint256 The collateral value in USD.
+     */
     function _getAccountInformation(address user) private returns (uint256, uint256) {
         uint256 totalMinted = s_amountMinted[user];
         uint256 collateralValueInUsd = getCollateralInUsd(user);
         return (totalMinted, collateralValueInUsd);
     }
 
+    /**
+     * @notice This function returns the health factor of a specific user.
+     * @dev This function is internal and only intended to be called by
+     * functions within the engine contract.
+     * @param user The user for which we want to check the health factor.
+     * @return uint256 The health factor of the user.
+     */
     function _healthFactor(address user) private returns (uint256) {
         (uint256 totalMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
         uint256 adjustedCollateral = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         return (adjustedCollateral * PRECISION) / totalMinted;
     }
 
+    /**
+     * @notice Reverts with custom error is the health factor of the user
+     * is broken. The health factor of a user is broken if the user is too close
+     * to liquidation.
+     * @param user The user for which we want to check the health factor.
+     */
     function _revertIfHealthFactorIsBroken(address user) internal {
         uint256 healthFactor = _healthFactor(user);
         if (healthFactor < MIN_HEALTH_FACTOR) {
@@ -193,12 +223,30 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /* Public functions */
+    /**
+     * @notice Function that allows anyone to calculate the value in USD of
+     * a specific token and amount.
+     * @dev Uses the OracleLib.sol library to check for stale data. It will revert
+     * if the data returned is stale.
+     * @dev Uses the AggregatorV3Interface from chainlink-evm.
+     * @param token The address of the token to be checked.
+     * @param amount The amount of token passed.
+     * @return uint256 Returns the USD value of the amount of token passed.
+     */
     function getUsdValue(address token, uint256 amount) public returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
         (, int256 price,,,) = priceFeed.staleCheckLatestRound();
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
     }
 
+    /**
+     * @notice This function gets called to get the total amount of collateral
+     * value in USD deposited by a specific user.
+     * @dev Calls the getUsdValue() function to get the value in USD.
+     * @param user The address of the user we want to get the USD collateral value for.
+     * @return totalCollateralInUsd The total amount of collateral deposited by
+     * the user in USD.
+     */
     function getCollateralInUsd(address user) public returns (uint256 totalCollateralInUsd) {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             address token = s_collateralTokens[i];
