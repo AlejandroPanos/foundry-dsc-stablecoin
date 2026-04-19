@@ -36,6 +36,8 @@ contract DSCEngine is ReentrancyGuard {
     /* Errors                                                       */
     /* ============================================================ */
     error DSCEngine__AddressesMustBeOfSameLength();
+    error DSCEngine__AmountShouldBeMoreThanZero();
+    error DSCEngine__PriceFeedNotAllowed();
 
     /* ============================================================ */
     /* State variables                                              */
@@ -69,6 +71,23 @@ contract DSCEngine is ReentrancyGuard {
     address[] private s_collateralTokens;
 
     DecentralisedStableCoin private immutable i_dsc;
+
+    /* ============================================================ */
+    /* Modifiers                                                    */
+    /* ============================================================ */
+    modifier moreThanZero(uint256 amount) {
+        if (amount == 0) {
+            revert DSCEngine__AmountShouldBeMoreThanZero();
+        }
+        _;
+    }
+
+    modifier tokenAllowed(address token) {
+        if (token == address(0)) {
+            revert DSCEngine__PriceFeedNotAllowed();
+        }
+        _;
+    }
 
     /* ============================================================ */
     /* Constructor                                                  */
