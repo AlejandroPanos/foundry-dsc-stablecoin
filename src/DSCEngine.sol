@@ -40,6 +40,8 @@ contract DSCEngine is ReentrancyGuard {
     error DSCEngine__ERC20TransferFailed();
     error DSCEngine__MintFailed();
     error DSCEngine__HealthFactorBelowMinimum();
+    error DSCEngine__HealthFactorOk();
+    error DSCEngine__HealthFactorNotImproved();
 
     /* ============================================================ */
     /* State variables                                              */
@@ -182,9 +184,8 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     /**
-     * @notice This function is called when the liquidating user is
-     * the same as the liquidator. This means that one user liquidates
-     * its own position in the protocol.
+     * @notice Allows a user to withdraw their deposited collateral from the engine.
+     * @notice The user's health factor must remain above the minimum after redemption.
      * @dev Uses the nonReentrant modifier from ReentrancyGuard.sol
      * @dev Calls the private _redeemCollateral() function.
      * @dev Calls the internal _revertIfHealthFactorIsBroken() function.
@@ -281,7 +282,7 @@ contract DSCEngine is ReentrancyGuard {
      * @return uint256 The total amount of DSC minted by the user.
      * @return uint256 The collateral value in USD.
      */
-    function _getAccountInformation(address user) private returns (uint256, uint256) {
+    function _getAccountInformation(address user) private view returns (uint256, uint256) {
         uint256 totalMinted = s_amountMinted[user];
         uint256 collateralValueInUsd = getCollateralInUsd(user);
         return (totalMinted, collateralValueInUsd);
@@ -291,11 +292,16 @@ contract DSCEngine is ReentrancyGuard {
      * @notice This function returns the health factor of a specific user.
      * @dev This function is internal and only intended to be called by
      * functions within the engine contract.
+     * @dev Returns type(uint256).max if the user has no DSC minted,
+     * indicating a perfect health factor.
      * @param user The user for which we want to check the health factor.
      * @return uint256 The health factor of the user.
      */
-    function _healthFactor(address user) private returns (uint256) {
+    function _healthFactor(address user) private view returns (uint256) {
         (uint256 totalMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
+
+        if (totalMinted == 0) return type(uint256).max;
+
         uint256 adjustedCollateral = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         return (adjustedCollateral * PRECISION) / totalMinted;
     }
@@ -325,8 +331,8 @@ contract DSCEngine is ReentrancyGuard {
      * @notice The user that liquidates and the liquidator can be the same
      * address. If someone liquidates another user's position, they will not
      * be the same address.
-     * @param from The address that liquidates.
-     * @param to The address of the liquidator.
+     * @param from The address whose collateral balance is reduced.
+     * @param to The address that receives the collateral.
      * @param token The token used as collateral.
      * @param amount The amount of token to redeem.
      */
@@ -335,7 +341,7 @@ contract DSCEngine is ReentrancyGuard {
         emit CollateralRedeemed(from, to, token, amount);
         bool success = IERC20(token).transfer(to, amount);
         if (!success) {
-            revert DSCEngine__ERC20TranferFailed();
+            revert DSCEngine__ERC20TransferFailed();
         }
     }
 
@@ -365,7 +371,7 @@ contract DSCEngine is ReentrancyGuard {
      * @param amount The amount of token passed.
      * @return uint256 Returns the USD value of the amount of token passed.
      */
-    function getUsdValue(address token, uint256 amount) public returns (uint256) {
+    function getUsdValue(address token, uint256 amount) public view returns (uint256) {
         AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
         (, int256 price,,,) = priceFeed.staleCheckLatestRound();
         return ((uint256(price) * ADDITIONAL_FEED_PRECISION) * amount) / PRECISION;
@@ -379,7 +385,7 @@ contract DSCEngine is ReentrancyGuard {
      * @return totalCollateralInUsd The total amount of collateral deposited by
      * the user in USD.
      */
-    function getCollateralInUsd(address user) public returns (uint256 totalCollateralInUsd) {
+    function getCollateralInUsd(address user) public view returns (uint256 totalCollateralInUsd) {
         for (uint256 i = 0; i < s_collateralTokens.length; i++) {
             address token = s_collateralTokens[i];
             uint256 amount = s_collateralAmount[user][token];
@@ -398,13 +404,13 @@ contract DSCEngine is ReentrancyGuard {
      * @return uint256 The equivalent amount of the collateral token.
      * @dev Uses the Chainlink price feed for the given token to determine
      * the current exchange rate.
-     * @dev Uses staleCheckLatestRoundData() from OracleLib instead of
+     * @dev Uses staleCheckLatestRound() from OracleLib instead of
      * latestRoundData() directly to revert if the price feed data is stale,
      * protecting the system against oracle manipulation or outages.
      */
     function getTokenAmountFromUsd(address token, uint256 usdAmountInWei) public view returns (uint256) {
-        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_priceFeeds[token]);
-        (, int256 price,,,) = priceFeed.staleCheckLatestRoundData();
+        AggregatorV3Interface priceFeed = AggregatorV3Interface(s_tokenToPriceFeed[token]);
+        (, int256 price,,,) = priceFeed.staleCheckLatestRound();
         return (usdAmountInWei * PRECISION) / (uint256(price) * ADDITIONAL_FEED_PRECISION);
     }
 
@@ -441,7 +447,7 @@ contract DSCEngine is ReentrancyGuard {
      * @return uint256 The amount of the specified collateral token deposited by the user.
      */
     function getCollateralBalanceOfUser(address user, address token) external view returns (uint256) {
-        return s_collateralDeposited[user][token];
+        return s_collateralAmount[user][token];
     }
 
     /**
@@ -450,6 +456,6 @@ contract DSCEngine is ReentrancyGuard {
      * @return address The address of the Chainlink price feed for the given token.
      */
     function getCollateralTokenPriceFeed(address token) external view returns (address) {
-        return s_priceFeeds[token];
+        return s_tokenToPriceFeed[token];
     }
 }
