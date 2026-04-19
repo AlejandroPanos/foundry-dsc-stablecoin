@@ -27,21 +27,47 @@ import {OracleLib} from "src/libraries/OracleLib.sol";
  */
 
 contract DSCEngine is ReentrancyGuard {
-    /* Libraries */
+    /* ============================================================ */
+    /* Libraries                                                    */
+    /* ============================================================ */
     using OracleLib for AggregatorV3Interface;
 
-    /* Errors */
+    /* ============================================================ */
+    /* Errors                                                       */
+    /* ============================================================ */
     error DSCEngine__AddressesMustBeOfSameLength();
 
-    /* State variables */
+    /* ============================================================ */
+    /* State variables                                              */
+    /* ============================================================ */
+    /**
+     * @dev Mapping to keep track of a token's price feed address.
+     */
     mapping(address token => address priceFeed) private s_tokenToPriceFeed;
+
+    /**
+     * @dev Mapping to keep track of the amount of collateral
+     * deposited by a specific user.
+     */
+    mapping(address user => mapping(address token => uint256 amount)) private s_collateralAmount;
+
+    /**
+     * @dev Mapping to track the amount of DSC minted by a user.
+     */
+    mapping(address user => uint256 amountDSCMinted) private s_amountMinted;
+
+    /**
+     * @dev Array to push the addresses of the tokens that can be used as collateral.
+     */
     address[] private s_collateralTokens;
 
     DecentralisedStableCoin private immutable i_dsc;
 
-    /* Constructor */
+    /* ============================================================ */
+    /* Constructor                                                  */
+    /* ============================================================ */
     /**
-     * @dev Constructor takes the token addresses which will be the WETH and WBTC 
+     * @dev Constructor takes the token addresses which will be the WETH and WBTC
      * addresses for this specific implementation, although more could be added
      * dynamically thanks to the array implementation here.
      * @dev Constructor takes the price feed addresses for the specified tokens. In
