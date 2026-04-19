@@ -19,9 +19,8 @@ import {OracleLib} from "src/libraries/OracleLib.sol";
  * 2. Pegged to the value of the USD
  * 3. Is fully algorithmic
  *
- * @notice The system is created so that it always has to be overcollateralized. This
- * means that at no point, should the value of all collateral exceed the dollar value
- * pegged to the DSC token.
+ * @notice The system is always overcollateralised — the value of all collateral must
+ * always exceed the total value of DSC in circulation.
  * @dev This contract is the core of the implementation of the DeFi protocol. It controls
  * everything from minting, depositing, liquidating, etc.
  */
@@ -89,7 +88,7 @@ contract DSCEngine is ReentrancyGuard {
     }
 
     modifier tokenAllowed(address token) {
-        if (token == address(0)) {
+        if (s_tokenToPriceFeed[token] == address(0)) {
             revert DSCEngine__PriceFeedNotAllowed();
         }
         _;
@@ -105,7 +104,7 @@ contract DSCEngine is ReentrancyGuard {
      * @dev Constructor takes the price feed addresses for the specified tokens. In
      * this case the price feed addresses will be those of ETH-USD and BTC-USD.
      * @dev Constructor takes in the deployed DSC contract address.
-     * @notice The token addresses and the price feed addresses must be of same lenght.
+     * @notice The token addresses and the price feed addresses must be of same length.
      */
     constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dsc) {
         if (tokenAddresses.length != priceFeedAddresses.length) {
@@ -122,6 +121,7 @@ contract DSCEngine is ReentrancyGuard {
 
     /* Functions */
     /**
+     * @notice Deposits collateral into the engine to back DSC minting
      * @dev This funciton deposits collateral in the engine contract. The collateral
      * will be locked in the engine contract until the collateral is redeemed.
      * @dev Uses the nonReentrant modifier from the ReentrancyGuard.sol contract
