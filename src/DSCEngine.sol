@@ -78,6 +78,7 @@ contract DSCEngine is ReentrancyGuard {
     /* Events                                                       */
     /* ============================================================ */
     event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
+    event CollateralRedeemed(address indexed from, address indexed to, address indexed token, uint256 amount);
 
     /* ============================================================ */
     /* Modifiers                                                    */
@@ -126,7 +127,7 @@ contract DSCEngine is ReentrancyGuard {
     /* ============================================================ */
     /**
      * @notice Deposits collateral into the engine to back DSC minting
-     * @dev This funciton deposits collateral in the engine contract. The collateral
+     * @dev This function deposits collateral in the engine contract. The collateral
      * will be locked in the engine contract until the collateral is redeemed.
      * @dev Uses the nonReentrant modifier from the ReentrancyGuard.sol contract
      * imported from the OpenZeppelin contract library.
@@ -218,6 +219,25 @@ contract DSCEngine is ReentrancyGuard {
         (uint256 totalMinted, uint256 collateralValueInUsd) = _getAccountInformation(user);
         uint256 adjustedCollateral = (collateralValueInUsd * LIQUIDATION_THRESHOLD) / LIQUIDATION_PRECISION;
         return (adjustedCollateral * PRECISION) / totalMinted;
+    }
+
+    /**
+     * @notice This is a private function that redeems collateral.
+     * @notice The user that liquidates and the liquidator can be the same
+     * address. If someone liquidates another user's position, they will not
+     * be the same address.
+     * @param from The address that liquidates.
+     * @param to The address of the liquidator.
+     * @param token The token used as collateral.
+     * @param amount The amount of token to redeem.
+     */
+    function _redeemCollateral(address from, address to, address token, uint256 amount) private {
+        s_collateralAmount[from][token] -= amount;
+        emit CollateralRedeemed(from, to, token, amount);
+        bool success = IERC20(token).transfer(to, amount);
+        if (!success) {
+            revert DSCEngine__ERC20TranferFailed();
+        }
     }
 
     /**
