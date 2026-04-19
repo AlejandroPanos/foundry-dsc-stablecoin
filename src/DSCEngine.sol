@@ -40,6 +40,15 @@ contract DSCEngine is ReentrancyGuard {
     DecentralisedStableCoin private immutable i_dsc;
 
     /* Constructor */
+    /**
+     * @dev Constructor takes the token addresses which will be the WETH and WBTC 
+     * addresses for this specific implementation, although more could be added
+     * dynamically thanks to the array implementation here.
+     * @dev Constructor takes the price feed addresses for the specified tokens. In
+     * this case the price feed addresses will be those of ETH-USD and BTC-USD.
+     * @dev Constructor takes in the deployed DSC contract address.
+     * @notice The token addresses and the price feed addresses must be of same lenght.
+     */
     constructor(address[] memory tokenAddresses, address[] memory priceFeedAddresses, address dsc) {
         if (tokenAddresses.length != priceFeedAddresses.length) {
             revert DSCEngine__AddressesMustBeOfSameLength();
