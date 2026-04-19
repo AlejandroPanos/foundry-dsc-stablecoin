@@ -121,7 +121,9 @@ contract DSCEngine is ReentrancyGuard {
         i_dsc = DecentralisedStableCoin(dsc);
     }
 
-    /* Functions */
+    /* ============================================================ */
+    /* External and public functions                                */
+    /* ============================================================ */
     /**
      * @notice Deposits collateral into the engine to back DSC minting
      * @dev This funciton deposits collateral in the engine contract. The collateral
@@ -168,7 +170,9 @@ contract DSCEngine is ReentrancyGuard {
 
     function liquidate() public {}
 
-    /* Internal & private functions */
+    /* ============================================================ */
+    /* Internal and private functions                                */
+    /* ============================================================ */
     function _getAccountInformation(address user) private returns (uint256, uint256) {
         uint256 totalMinted = s_amountMinted[user];
         uint256 collateralValueInUsd = getCollateralInUsd(user);
