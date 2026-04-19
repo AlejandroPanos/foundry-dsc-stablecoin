@@ -54,7 +54,7 @@ library OracleLib {
      * @dev Returns the timout set in the library.
      * @return uint256 Returns the value of the timeout variable.
      */
-    function getTimeout() external view returns (uint256) {
+    function getTimeout() external pure returns (uint256) {
         return TIMEOUT;
     }
 }
