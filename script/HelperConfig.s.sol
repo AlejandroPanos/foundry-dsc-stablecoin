@@ -7,7 +7,7 @@ import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 contract HelperConfig is Script {
     /* Instantiate a config */
-    NetworkConfig public activeNetworkConfig;
+    NetworkConfig private activeNetworkConfig;
 
     /* Type variables */
     struct NetworkConfig {
