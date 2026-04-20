@@ -72,4 +72,8 @@ contract HelperConfig is Script {
 
         return anvilConfig;
     }
+
+    function getActiveNetworkConfig() external view returns (NetworkConfig memory) {
+        return activeNetworkConfig;
+    }
 }
