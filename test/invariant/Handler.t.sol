@@ -75,7 +75,17 @@ contract Handler is Test {
         usersWithCollateralDeposited.push(msg.sender);
     }
 
-    function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
+    function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
+        ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
+        uint256 maxCollateralToRedeem = engine.getCollateralBalanceOfUser(msg.sender, address(collateral));
+        amountCollateral = bound(amountCollateral, 1, maxCollateralToRedeem);
+
+        if (amountCollateral == 0) {
+            return;
+        }
+
+        engine.redeemCollateral(address(collateral), amountCollateral);
+    }
 
     /**
      * @notice Function that returns either a weth or wbtc ERC20 Mock contract depending
