@@ -72,6 +72,20 @@ contract Handler is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice This function is used to deposit an amount of collateral by the 
+     * user that calls the function.
+     * @param collateralSeed Is a random number that is used to get the specific
+     * ERC20Mock contract for the specific collateral.
+     * @param amountCollateral The amount of collateral to deposit, bounded between
+     * 1 and MAX_DEPOSIT_SIZE.
+     * @dev See _getCollateralFromSeed(uint256 collateralSeed) to get a better
+     * understanding of the implementation of collateralSeed.
+     * @dev Adds msg.sender to the usersWithCollateralDeposited array after a successful
+     * deposit so they can be selected as actors in subsequent handler calls.
+     * @dev Mints mock ERC20 tokens directly to msg.sender and approves the engine
+     * before calling depositCollateral, simulating a user who already holds collateral tokens.
+     */
     function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         amountCollateral = bound(amountCollateral, 1, MAX_DEPOSIT_SIZE);
