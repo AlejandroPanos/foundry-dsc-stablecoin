@@ -24,4 +24,16 @@ contract Handler is Test {
     MockV3Aggregator public ethUsdPriceFeed;
 
     uint256 MAX_DEPOSIT_SIZE = type(uint256).max;
+
+    /* Constructor */
+    constructor(DSCEngine _engine, DecentralisedStableCoin _dsc) {
+        engine = _engine;
+        dsc = _dsc;
+
+        address[] memory collateralTokens = engine.getCollateralTokens();
+        weth = ERC20Mock(collateralTokens[0]);
+        wbtc = ERC20Mock(collateralTokens[1]);
+
+        ethUsdPriceFeed = MockV3Aggregator(engine.getCollateralTokenPriceFeed(address(weth)));
+    }
 }
