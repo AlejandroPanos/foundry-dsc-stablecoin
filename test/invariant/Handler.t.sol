@@ -73,7 +73,7 @@ contract Handler is Test {
     }
 
     /**
-     * @notice This function is used to deposit an amount of collateral by the 
+     * @notice This function is used to deposit an amount of collateral by the
      * user that calls the function.
      * @param collateralSeed Is a random number that is used to get the specific
      * ERC20Mock contract for the specific collateral.
@@ -99,6 +99,20 @@ contract Handler is Test {
         usersWithCollateralDeposited.push(msg.sender);
     }
 
+    /**
+     * @notice This function is used to redeem an amount of collateral by the
+     * user that calls the function.
+     * @param collateralSeed Is a random number that is used to get the specific
+     * ERC20Mock contract for the specific collateral.
+     * @param amountCollateral The amount of collateral to redeem, bounded between
+     * 1 and the maximum amount of collateral the user is able to redeem.
+     * @dev See _getCollateralFromSeed(uint256 collateralSeed) to get a better
+     * understanding of the implementation of collateralSeed.
+     * @dev Returns early if the amount of collateral the user has available to
+     * redeem is equal to zero.
+     * @dev Calls redeemCollateral directly as msg.sender without pranking since
+     * the handler itself is the caller in this context.
+     */
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         uint256 maxCollateralToRedeem = engine.getCollateralBalanceOfUser(msg.sender, address(collateral));
