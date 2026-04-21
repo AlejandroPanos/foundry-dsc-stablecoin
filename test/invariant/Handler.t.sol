@@ -66,6 +66,12 @@ contract Handler is Test {
 
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
 
+    /**
+     * @notice Function that returns either a weth or wbtc ERC20 Mock contract depending
+     * on the collateral seed that gets passed.
+     * @param collateralSeed The seed that gets passed to the function.
+     * @return ERC20Mock Returns weth if the seed is even, wbtc if the seed is odd.
+     */
     function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {
         if (collateralSeed % 2 == 0) {
             return weth;
