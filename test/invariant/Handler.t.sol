@@ -62,7 +62,18 @@ contract Handler is Test {
         vm.stopPrank();
     }
 
-    function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
+    function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
+        ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
+        amountCollateral = bound(amountCollateral, 1, MAX_DEPOSIT_SIZE);
+
+        vm.startPrank(msg.sender);
+        collateral.mint(msg.sender, amountCollateral);
+        collateral.approve(address(engine), amountCollateral);
+        engine.depositCollateral(address(collateral), amountCollateral);
+        vm.stopPrank();
+
+        usersWithCollateralDeposited.push(msg.sender);
+    }
 
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
 
