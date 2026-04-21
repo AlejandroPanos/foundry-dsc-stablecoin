@@ -20,7 +20,7 @@ contract Handler is Test {
     ERC20Mock wbtc;
 
     /* State variables */
-    address[] public userWithCollateralDeposited;
+    address[] public usersWithCollateralDeposited;
     MockV3Aggregator public ethUsdPriceFeed;
 
     uint256 MAX_DEPOSIT_SIZE = type(uint256).max;
@@ -35,5 +35,30 @@ contract Handler is Test {
         wbtc = ERC20Mock(collateralTokens[1]);
 
         ethUsdPriceFeed = MockV3Aggregator(engine.getCollateralTokenPriceFeed(address(weth)));
+    }
+
+    /* Functions */
+    function mint(uint256 amount, uint256 addressSeed) public {
+        if (usersWithCollateralDeposited.length == 0) {
+            return;
+        }
+
+        address sender = usersWithCollateralDeposited[addressSeed % usersWithCollateralDeposited.length];
+        (uint256 totalMinted, uint256 collateralValue) = engine.getAccountInformation(sender);
+        int256 maxDSCToMint = (int256(collateralValue) / 2) - int256(totalMinted);
+
+        if (maxDSCToMint < 0) {
+            return;
+        }
+
+        amount = bound(amount, 0, uint256(maxDSCToMint));
+
+        if (amount == 0) {
+            return;
+        }
+
+        vm.startPrank(sender);
+        engine.mintDsc(amount);
+        vm.stopPrank();
     }
 }
