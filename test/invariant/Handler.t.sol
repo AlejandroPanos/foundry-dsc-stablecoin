@@ -66,5 +66,11 @@ contract Handler is Test {
 
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
 
-    function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {}
+    function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {
+        if (collateralSeed % 2 == 0) {
+            return weth;
+        } else {
+            return wbtc;
+        }
+    }
 }
