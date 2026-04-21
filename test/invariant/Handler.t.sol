@@ -61,4 +61,10 @@ contract Handler is Test {
         engine.mintDsc(amount);
         vm.stopPrank();
     }
+
+    function depositCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
+
+    function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {}
+
+    function _getCollateralFromSeed(uint256 collateralSeed) private view returns (ERC20Mock) {}
 }
