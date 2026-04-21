@@ -38,7 +38,17 @@ contract Handler is Test {
     }
 
     /* Functions */
-    function mint(uint256 amount, uint256 addressSeed) public {
+    /**
+     * @notice This function allows a user to mint a specific amount of DSC token.
+     * @param amount The amount of token the user wants to mint.
+     * @param addressSeed A random number used to select a user from the array
+     * of addresses that have deposited collateral.
+     * @dev The sender is selected by applying modulo to the address seed against the length
+     * of the deposited collateral users array, producing a valid array index.
+     * @dev Returns early if no users have deposited collateral or if the maximum
+     * mintable amount is zero or negative, to avoid invalid state transitions.
+     */
+    function mintDsc(uint256 amount, uint256 addressSeed) public {
         if (usersWithCollateralDeposited.length == 0) {
             return;
         }
