@@ -13,5 +13,15 @@ import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/shared/mocks/MockV
 
 contract Handler is Test {
     /* Instantiate contracts */
+    DSCEngine engine;
+    DecentralisedStableCoin dsc;
 
-    }
+    ERC20Mock weth;
+    ERC20Mock wbtc;
+
+    /* State variables */
+    address[] public userWithCollateralDeposited;
+    MockV3Aggregator public ethUsdPriceFeed;
+
+    uint256 MAX_DEPOSIT_SIZE = type(uint256).max;
+}
