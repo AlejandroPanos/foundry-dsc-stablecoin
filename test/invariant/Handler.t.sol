@@ -138,4 +138,9 @@ contract Handler is Test {
             return wbtc;
         }
     }
+
+    /* Getter functions */
+    function getUsersWithCollateralDeposited() external view returns (address[] memory) {
+        return usersWithCollateralDeposited;
+    }
 }
