@@ -34,4 +34,16 @@ contract Invariant is StdInvariant, Test {
         handler = new Handler(engine, dsc);
         targetContract(address(handler));
     }
+
+    /* Invariants */
+    function invariant_valueOfCollateralGreaterOrEqualToTotalSupply() public view {
+        uint256 totalSupply = dsc.totalSupply();
+        uint256 totalWethDeposited = IERC20(weth).balanceOf(address(engine));
+        uint256 totalWbtcDeposited = IERC20(wbtc).balanceOf(address(engine));
+
+        uint256 wethUsdValue = engine.getUsdValue(weth, totalWethDeposited);
+        uint256 wbtcUsdValue = engine.getUsdValue(wbtc, totalWbtcDeposited);
+
+        assert(wethUsdValue + wbtcUsdValue >= totalSupply);
+    }
 }
