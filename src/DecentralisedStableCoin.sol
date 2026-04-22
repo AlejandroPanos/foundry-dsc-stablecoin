@@ -24,11 +24,11 @@ contract DecentralisedStableCoin is ERC20Burnable, Ownable {
         uint256 userBalance = balanceOf(msg.sender);
 
         if (_value <= 0) {
-            revert DecentralisedStableCoin__MustBeGreatedThanZero();
+            revert DecentralisedStableCoin__MustBeGreaterThanZero();
         }
 
         if (userBalance < _value) {
-            revert DecentralisedStableCoin__BalanceMustBeGreatedThanValue();
+            revert DecentralisedStableCoin__BalanceMustBeGreaterThanValue();
         }
 
         super.burn(_value);
@@ -47,7 +47,7 @@ contract DecentralisedStableCoin is ERC20Burnable, Ownable {
         }
 
         if (_amount <= 0) {
-            revert DecentralisedStableCoin__MustBeGreatedThanZero();
+            revert DecentralisedStableCoin__MustBeGreaterThanZero();
         }
 
         _mint(_to, _amount);
