@@ -7,6 +7,7 @@ import {DSCEngine} from "src/DSCEngine.sol";
 import {DecentralisedStableCoin} from "src/DecentralisedStableCoin.sol";
 import {HelperConfig} from "script/HelperConfig.s.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {MockV3Aggregator} from "@chainlink/contracts/src/v0.8/shared/mocks/MockV3Aggregator.sol";
 
 contract DSCEngineTest is Test {
     /* Instantiate contracts */
@@ -24,6 +25,7 @@ contract DSCEngineTest is Test {
     address public BOB = makeAddr("BOB");
     address public ALICE = makeAddr("ALICE");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
+    uint256 private constant ALICE_COLLATERAL = 100 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_TO_MINT = 100e18;
     uint256 private constant AMOUNT_TO_MINT_TOO_HIGH = 12_000e18; // just over the limit
@@ -48,6 +50,7 @@ contract DSCEngineTest is Test {
         wbtc = config.wbtc;
 
         ERC20Mock(weth).mint(BOB, STARTING_ERC20_BALANCE);
+        ERC20Mock(weth).mint(ALICE, 100 ether);
     }
 
     /* ============================================================ */
@@ -147,5 +150,36 @@ contract DSCEngineTest is Test {
         vm.expectRevert(DSCEngine.DSCEngine__AmountShouldBeMoreThanZero.selector);
         engine.liquidate(weth, BOB, 0);
         vm.stopPrank();
+    }
+
+    function testLiquidatorReceivesCollateralPlusBonus() public {
+        // BOB deposits and mints
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        // ALICE deposits and mints BEFORE price crash
+        vm.startPrank(ALICE);
+        ERC20Mock(weth).approve(address(engine), ALICE_COLLATERAL);
+        engine.depositCollateral(weth, ALICE_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        // NOW crash the price — both BOB and ALICE are affected
+        // but ALICE already has her DSC to use as liquidator
+        int256 crashedEthPrice = 18e8;
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(crashedEthPrice);
+
+        // ALICE liquidates BOB
+        vm.startPrank(ALICE);
+        dsc.approve(address(engine), AMOUNT_TO_MINT);
+        uint256 aliceWethBalanceBefore = ERC20Mock(weth).balanceOf(ALICE);
+        engine.liquidate(weth, BOB, AMOUNT_TO_MINT);
+        uint256 aliceWethBalanceAfter = ERC20Mock(weth).balanceOf(ALICE);
+        vm.stopPrank();
+
+        assert(aliceWethBalanceAfter > aliceWethBalanceBefore);
     }
 }
