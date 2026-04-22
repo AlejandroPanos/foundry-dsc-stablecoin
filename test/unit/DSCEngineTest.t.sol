@@ -22,7 +22,7 @@ contract DSCEngineTest is Test {
     address wbtc;
 
     address public BOB = makeAddr("BOB");
-    address public JOHN = makeAddr("JOHN");
+    address public ALICE = makeAddr("ALICE");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_TO_MINT = 100e18;
@@ -125,6 +125,20 @@ contract DSCEngineTest is Test {
 
         vm.expectRevert(DSCEngine.DSCEngine__HealthFactorBelowMinimum.selector);
         engine.mintDsc(AMOUNT_TO_MINT_TOO_HIGH);
+        vm.stopPrank();
+    }
+
+    function testLiquidateReturnsIfHealthFactorIsOk() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        vm.startPrank(ALICE);
+        vm.expectRevert(DSCEngine.DSCEngine__HealthFactorOk.selector);
+        engine.liquidate(weth, BOB, AMOUNT_TO_MINT);
         vm.stopPrank();
     }
 }
