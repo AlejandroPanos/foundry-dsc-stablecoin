@@ -116,6 +116,9 @@ contract Handler is Test {
     function redeemCollateral(uint256 collateralSeed, uint256 amountCollateral) public {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         uint256 maxCollateralToRedeem = engine.getCollateralBalanceOfUser(msg.sender, address(collateral));
+
+        if (maxCollateralToRedeem == 0) return;
+
         amountCollateral = bound(amountCollateral, 1, maxCollateralToRedeem);
 
         if (amountCollateral == 0) {
