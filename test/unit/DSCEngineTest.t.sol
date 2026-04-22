@@ -29,6 +29,10 @@ contract DSCEngineTest is Test {
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
 
+    /* Events */
+    event CollateralDeposited(address indexed user, address indexed token, uint256 amount);
+    event CollateralRedeemed(address indexed from, address indexed to, address indexed token, uint256 amount);
+
     /* Set up function */
     function setUp() external {
         deployer = new DeployDSC();
@@ -86,5 +90,16 @@ contract DSCEngineTest is Test {
         engine.depositCollateral(weth, AMOUNT_COLLATERAL);
         vm.stopPrank();
         assertEq(engine.getCollateralBalanceOfUser(USER, weth), AMOUNT_COLLATERAL);
+    }
+
+    function testDepositCollateralEmitsEvent() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+
+        vm.expectEmit(true, true, false, false);
+        emit CollateralDeposited(USER, weth, AMOUNT_COLLATERAL);
+
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
     }
 }
