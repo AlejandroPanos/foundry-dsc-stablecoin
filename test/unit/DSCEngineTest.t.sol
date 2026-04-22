@@ -293,6 +293,18 @@ contract DSCEngineTest is Test {
     /* ============================================================ */
     /* Fuzz tests                                                   */
     /* ============================================================ */
+    /**
+     * @notice Fuzz test that verifies minting reverts when the mint amount
+     * would break the health factor, and succeeds when within safe limits.
+     * @dev Foundry generates random collateral and mint amounts. If the mint
+     * amount exceeds half the collateral USD value the function must revert
+     * with HealthFactorBelowMinimum. Otherwise it must succeed and the health
+     * factor must remain above the minimum.
+     * @param collateralAmount A random collateral amount bounded between 1
+     * and type(uint96).max.
+     * @param mintAmount A random mint amount bounded between 1 and
+     * type(uint96).max.
+     */
     function testFuzz_DepositCollateralAndMintDsc(uint256 collateralAmount, uint256 mintAmount) public {
         collateralAmount = bound(collateralAmount, 1, type(uint96).max);
         mintAmount = bound(mintAmount, 1, type(uint96).max);
