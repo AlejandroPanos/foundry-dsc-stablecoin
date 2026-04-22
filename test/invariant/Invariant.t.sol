@@ -11,4 +11,27 @@ import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Handler} from "test/invariant/Handler.t.sol";
 
-contract Invariant is StdInvariant, Test {}
+contract Invariant is StdInvariant, Test {
+    /* Instantiate contracts */
+    DeployDSC deployer;
+    DSCEngine engine;
+    DecentralisedStableCoin dsc;
+    HelperConfig helperConfig;
+    Handler handler;
+
+    address weth;
+    address wbtc;
+
+    HelperConfig.NetworkConfig config;
+
+    /* Set up function */
+    function setUp() external {
+        deployer = new DeployDSC();
+        (dsc, engine, helperConfig) = deployer.run();
+        config = helperConfig.getActiveNetworkConfig();
+        weth = config.weth;
+        wbtc = config.wbtc;
+        handler = new Handler(engine, dsc);
+        targetContract(address(handler));
+    }
+}
