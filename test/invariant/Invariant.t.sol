@@ -19,10 +19,13 @@ contract Invariant is StdInvariant, Test {
     HelperConfig helperConfig;
     Handler handler;
 
+    /* State variables */
     address weth;
     address wbtc;
 
     HelperConfig.NetworkConfig config;
+
+    uint256 private constant MIN_HEALTH_FACTOR = 1e18;
 
     /* Set up function */
     function setUp() external {
@@ -45,5 +48,13 @@ contract Invariant is StdInvariant, Test {
         uint256 wbtcUsdValue = engine.getUsdValue(wbtc, totalWbtcDeposited);
 
         assert(wethUsdValue + wbtcUsdValue >= totalSupply);
+    }
+
+    function invariant_healthFactorDoesNotFallBelowMinimum() public view {
+        for (uint256 i = 0; i < handler.getUsersWithCollateralDeposited().length; i++) {
+            address user = handler.getUsersWithCollateralDeposited()[i];
+            uint256 healthFactor = engine.getHealthFactor(user);
+            assert(healthFactor >= MIN_HEALTH_FACTOR);
+        }
     }
 }
