@@ -76,4 +76,15 @@ contract DSCEngineTest is Test {
 
         assertEq(engine.getCollateralTokens().length, 2);
     }
+
+    /* ============================================================ */
+    /* External and public functions tests                          */
+    /* ============================================================ */
+    function testDepositCollateralAddsCollateral() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+        assertEq(engine.getCollateralBalanceOfUser(USER, weth), AMOUNT_COLLATERAL);
+    }
 }
