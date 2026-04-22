@@ -54,6 +54,18 @@ contract DSCEngineTest is Test {
         new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
     }
 
+    function testConstructorAddsToMapping() public {
+        tokenAddresses.push(weth);
+        tokenAddresses.push(wbtc);
+        priceFeedAddresses.push(wethUsdPriceFeed);
+        priceFeedAddresses.push(wbtcUsdPriceFeed);
+
+        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+
+        assertEq(engine.getCollateralTokenPriceFeed(weth), priceFeedAddresses[0]);
+        assertEq(engine.getCollateralTokenPriceFeed(wbtc), priceFeedAddresses[1]);
+    }
+
     function testConstructorAddsToArray() public {
         tokenAddresses.push(weth);
         tokenAddresses.push(wbtc);
