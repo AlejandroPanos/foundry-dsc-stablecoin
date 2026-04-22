@@ -24,6 +24,8 @@ contract DSCEngineTest is Test {
     address public USER = makeAddr("USER");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
+    uint256 public constant AMOUNT_TO_MINT = 100e18;
+
     HelperConfig.NetworkConfig config;
 
     address[] public tokenAddresses;
@@ -96,10 +98,21 @@ contract DSCEngineTest is Test {
         vm.startPrank(USER);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
 
-        vm.expectEmit(true, true, false, false);
+        vm.expectEmit(true, true, false, true);
         emit CollateralDeposited(USER, weth, AMOUNT_COLLATERAL);
 
         engine.depositCollateral(weth, AMOUNT_COLLATERAL);
         vm.stopPrank();
+    }
+
+    function testMintingAddsAmountMinted() public {
+        vm.startPrank(USER);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        assertEq(engine.getAmountMinted(USER), AMOUNT_TO_MINT);
     }
 }

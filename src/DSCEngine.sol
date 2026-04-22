@@ -464,4 +464,13 @@ contract DSCEngine is ReentrancyGuard {
     function getHealthFactor(address user) external view returns (uint256) {
         return _healthFactor(user);
     }
+
+    /**
+     * @notice Returns a user's minted amount.
+     * @param user The user we want to get the minted amount of.
+     * @return uint256 The amount minted from the user.
+     */
+    function getAmountMinted(address user) external view returns (uint256) {
+        return s_amountMinted[user];
+    }
 }
