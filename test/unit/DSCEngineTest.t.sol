@@ -21,10 +21,12 @@ contract DSCEngineTest is Test {
     address weth;
     address wbtc;
 
-    address public USER = makeAddr("USER");
+    address public BOB = makeAddr("BOB");
+    address public JOHN = makeAddr("JOHN");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_TO_MINT = 100e18;
+    uint256 private constant AMOUNT_TO_MINT_TOO_HIGH = 12_000e18; // just over the limit
 
     HelperConfig.NetworkConfig config;
 
@@ -45,7 +47,7 @@ contract DSCEngineTest is Test {
         weth = config.weth;
         wbtc = config.wbtc;
 
-        ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
+        ERC20Mock(weth).mint(BOB, STARTING_ERC20_BALANCE);
     }
 
     /* ============================================================ */
@@ -87,32 +89,42 @@ contract DSCEngineTest is Test {
     /* External and public functions tests                          */
     /* ============================================================ */
     function testDepositCollateralAddsCollateral() public {
-        vm.startPrank(USER);
+        vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
         engine.depositCollateral(weth, AMOUNT_COLLATERAL);
         vm.stopPrank();
-        assertEq(engine.getCollateralBalanceOfUser(USER, weth), AMOUNT_COLLATERAL);
+        assertEq(engine.getCollateralBalanceOfUser(BOB, weth), AMOUNT_COLLATERAL);
     }
 
     function testDepositCollateralEmitsEvent() public {
-        vm.startPrank(USER);
+        vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
 
         vm.expectEmit(true, true, false, true);
-        emit CollateralDeposited(USER, weth, AMOUNT_COLLATERAL);
+        emit CollateralDeposited(BOB, weth, AMOUNT_COLLATERAL);
 
         engine.depositCollateral(weth, AMOUNT_COLLATERAL);
         vm.stopPrank();
     }
 
     function testMintingAddsAmountMinted() public {
-        vm.startPrank(USER);
+        vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
         engine.depositCollateral(weth, AMOUNT_COLLATERAL);
 
         engine.mintDsc(AMOUNT_TO_MINT);
         vm.stopPrank();
 
-        assertEq(engine.getAmountMinted(USER), AMOUNT_TO_MINT);
+        assertEq(engine.getAmountMinted(BOB), AMOUNT_TO_MINT);
+    }
+
+    function testMintRevertsIfHealthFactorBreaks() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+
+        vm.expectRevert(DSCEngine.DSCEngine__HealthFactorBelowMinimum.selector);
+        engine.mintDsc(AMOUNT_TO_MINT_TOO_HIGH);
+        vm.stopPrank();
     }
 }
