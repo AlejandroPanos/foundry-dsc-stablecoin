@@ -239,6 +239,33 @@ contract DSCEngineTest is Test {
     }
 
     /* ============================================================ */
+    /* Fuzz tests                                                   */
+    /* ============================================================ */
+    function testFuzz_DepositCollateralAndMintDsc(uint256 collateralAmount, uint256 mintAmount) public {
+        collateralAmount = bound(collateralAmount, 1, type(uint96).max);
+        mintAmount = bound(mintAmount, 1, type(uint96).max);
+
+        vm.startPrank(BOB);
+        ERC20Mock(weth).mint(BOB, collateralAmount);
+        ERC20Mock(weth).approve(address(engine), collateralAmount);
+        engine.depositCollateral(weth, collateralAmount);
+
+        uint256 collateralValueInUsd = engine.getUsdValue(weth, collateralAmount);
+        uint256 maxMintable = collateralValueInUsd / 2;
+
+        if (mintAmount > maxMintable) {
+            vm.expectRevert(DSCEngine.DSCEngine__HealthFactorBelowMinimum.selector);
+            engine.mintDsc(mintAmount);
+        } else {
+            engine.mintDsc(mintAmount);
+            assertEq(engine.getAmountMinted(BOB), mintAmount);
+            assert(engine.getHealthFactor(BOB) >= 1e18);
+        }
+
+        vm.stopPrank();
+    }
+
+    /* ============================================================ */
     /* Getter functions tests                                       */
     /* ============================================================ */
     function testGetAccountInformationReturnsCorrectValues() public {
