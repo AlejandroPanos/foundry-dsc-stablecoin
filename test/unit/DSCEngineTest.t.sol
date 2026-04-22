@@ -237,4 +237,89 @@ contract DSCEngineTest is Test {
         (uint256 bobDebtAfter,) = engine.getAccountInformation(BOB);
         assert(bobDebtAfter < AMOUNT_TO_MINT);
     }
+
+    /* ============================================================ */
+    /* Getter functions tests                                       */
+    /* ============================================================ */
+    function testGetAccountInformationReturnsCorrectValues() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(BOB);
+
+        assertEq(totalDscMinted, AMOUNT_TO_MINT);
+        assert(collateralValueInUsd > 0);
+    }
+
+    function testGetAccountInformationReturnsZeroForNewUser() public view {
+        (uint256 totalDscMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(BOB);
+        assertEq(totalDscMinted, 0);
+        assertEq(collateralValueInUsd, 0);
+    }
+
+    function testGetCollateralTokensReturnsCorrectLength() public view {
+        address[] memory tokens = engine.getCollateralTokens();
+        assertEq(tokens.length, 2);
+    }
+
+    function testGetCollateralTokensReturnsCorrectAddresses() public view {
+        address[] memory tokens = engine.getCollateralTokens();
+        assertEq(tokens[0], weth);
+        assertEq(tokens[1], wbtc);
+    }
+
+    function testGetCollateralBalanceOfUserReturnsZeroByDefault() public view {
+        assertEq(engine.getCollateralBalanceOfUser(BOB, weth), 0);
+    }
+
+    function testGetCollateralBalanceOfUserReturnsCorrectBalance() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+
+        assertEq(engine.getCollateralBalanceOfUser(BOB, weth), AMOUNT_COLLATERAL);
+    }
+
+    function testGetCollateralTokenPriceFeedReturnsCorrectAddress() public view {
+        assertEq(engine.getCollateralTokenPriceFeed(weth), wethUsdPriceFeed);
+        assertEq(engine.getCollateralTokenPriceFeed(wbtc), wbtcUsdPriceFeed);
+    }
+
+    function testGetHealthFactorReturnsMaxForUserWithNoDebt() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        vm.stopPrank();
+
+        assertEq(engine.getHealthFactor(BOB), type(uint256).max);
+    }
+
+    function testGetHealthFactorReturnsCorrectValueAfterMinting() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        uint256 healthFactor = engine.getHealthFactor(BOB);
+        assert(healthFactor >= 1e18);
+    }
+
+    function testGetAmountMintedReturnsZeroByDefault() public view {
+        assertEq(engine.getAmountMinted(BOB), 0);
+    }
+
+    function testGetAmountMintedReturnsCorrectAmountAfterMinting() public {
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        assertEq(engine.getAmountMinted(BOB), AMOUNT_TO_MINT);
+    }
 }
