@@ -141,4 +141,11 @@ contract DSCEngineTest is Test {
         engine.liquidate(weth, BOB, AMOUNT_TO_MINT);
         vm.stopPrank();
     }
+
+    function testLiquidateRevertsIfAmountIsZero() public {
+        vm.startPrank(ALICE);
+        vm.expectRevert(DSCEngine.DSCEngine__AmountShouldBeMoreThanZero.selector);
+        engine.liquidate(weth, BOB, 0);
+        vm.stopPrank();
+    }
 }
