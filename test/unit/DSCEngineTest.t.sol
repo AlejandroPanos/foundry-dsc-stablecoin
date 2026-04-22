@@ -39,4 +39,16 @@ contract DSCEngineTest is Test {
 
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
     }
+
+    /* ============================================================ */
+    /* Constructor Tests                                            */
+    /* ============================================================ */
+    function testRevertsIfLegthsAreNotEqual() public {
+        tokenAddresses.push(weth);
+        priceFeedAddresses.push(wethUsdPriceFeed);
+        priceFeedAddresses.push(wbtcUsdPriceFeed);
+
+        vm.expectRevert(DSCEngine.DSCEngine__AddressesMustBeOfSameLength.selector);
+        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+    }
 }
