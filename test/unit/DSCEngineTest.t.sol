@@ -332,6 +332,10 @@ contract DSCEngineTest is Test {
     /* ============================================================ */
     /* Getter functions tests                                       */
     /* ============================================================ */
+    /**
+     * @notice Tests that getAccountInformation returns the correct DSC minted
+     * and collateral USD value for a user after depositing and minting.
+     */
     function testGetAccountInformationReturnsCorrectValues() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -345,27 +349,47 @@ contract DSCEngineTest is Test {
         assert(collateralValueInUsd > 0);
     }
 
+    /**
+     * @notice Tests that getAccountInformation returns zero values for an
+     * address that has never interacted with the protocol.
+     */
     function testGetAccountInformationReturnsZeroForNewUser() public view {
         (uint256 totalDscMinted, uint256 collateralValueInUsd) = engine.getAccountInformation(BOB);
         assertEq(totalDscMinted, 0);
         assertEq(collateralValueInUsd, 0);
     }
 
+    /**
+     * @notice Tests that getCollateralTokens returns an array of length two
+     * matching the number of supported collateral tokens.
+     */
     function testGetCollateralTokensReturnsCorrectLength() public view {
         address[] memory tokens = engine.getCollateralTokens();
         assertEq(tokens.length, 2);
     }
 
+    /**
+     * @notice Tests that getCollateralTokens returns the correct WETH and
+     * WBTC addresses in the expected order.
+     */
     function testGetCollateralTokensReturnsCorrectAddresses() public view {
         address[] memory tokens = engine.getCollateralTokens();
         assertEq(tokens[0], weth);
         assertEq(tokens[1], wbtc);
     }
 
+    /**
+     * @notice Tests that getCollateralBalanceOfUser returns zero for a user
+     * that has not deposited any collateral.
+     */
     function testGetCollateralBalanceOfUserReturnsZeroByDefault() public view {
         assertEq(engine.getCollateralBalanceOfUser(BOB, weth), 0);
     }
 
+    /**
+     * @notice Tests that getCollateralBalanceOfUser returns the correct
+     * balance after a user deposits collateral.
+     */
     function testGetCollateralBalanceOfUserReturnsCorrectBalance() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -375,11 +399,21 @@ contract DSCEngineTest is Test {
         assertEq(engine.getCollateralBalanceOfUser(BOB, weth), AMOUNT_COLLATERAL);
     }
 
+    /**
+     * @notice Tests that getCollateralTokenPriceFeed returns the correct
+     * Chainlink price feed addresses for WETH and WBTC.
+     */
     function testGetCollateralTokenPriceFeedReturnsCorrectAddress() public view {
         assertEq(engine.getCollateralTokenPriceFeed(weth), wethUsdPriceFeed);
         assertEq(engine.getCollateralTokenPriceFeed(wbtc), wbtcUsdPriceFeed);
     }
 
+    /**
+     * @notice Tests that getHealthFactor returns type(uint256).max for a user
+     * who has deposited collateral but minted no DSC.
+     * @dev A user with no debt has a perfect health factor represented as
+     * the maximum uint256 value to avoid division by zero.
+     */
     function testGetHealthFactorReturnsMaxForUserWithNoDebt() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -389,6 +423,10 @@ contract DSCEngineTest is Test {
         assertEq(engine.getHealthFactor(BOB), type(uint256).max);
     }
 
+    /**
+     * @notice Tests that getHealthFactor returns a value at or above the
+     * minimum health factor after a user mints within safe limits.
+     */
     function testGetHealthFactorReturnsCorrectValueAfterMinting() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -400,10 +438,18 @@ contract DSCEngineTest is Test {
         assert(healthFactor >= 1e18);
     }
 
+    /**
+     * @notice Tests that getHealthFactor returns a value at or above the
+     * minimum health factor after a user mints within safe limits.
+     */
     function testGetAmountMintedReturnsZeroByDefault() public view {
         assertEq(engine.getAmountMinted(BOB), 0);
     }
 
+    /**
+     * @notice Tests that getAmountMinted returns the correct amount after
+     * a user deposits collateral and mints DSC.
+     */
     function testGetAmountMintedReturnsCorrectAmountAfterMinting() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
