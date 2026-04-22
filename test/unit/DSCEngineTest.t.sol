@@ -103,6 +103,10 @@ contract DSCEngineTest is Test {
     /* ============================================================ */
     /* External and public functions tests                          */
     /* ============================================================ */
+    /**
+     * @notice Tests that depositing collateral correctly updates the user's
+     * collateral balance in the engine.
+     */
     function testDepositCollateralAddsCollateral() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -111,6 +115,10 @@ contract DSCEngineTest is Test {
         assertEq(engine.getCollateralBalanceOfUser(BOB, weth), AMOUNT_COLLATERAL);
     }
 
+    /**
+     * @notice Tests that depositing collateral emits the CollateralDeposited
+     * event with the correct indexed and non-indexed parameters.
+     */
     function testDepositCollateralEmitsEvent() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -122,6 +130,10 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice Tests that minting DSC correctly updates the user's minted
+     * balance in the engine.
+     */
     function testMintingAddsAmountMinted() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -133,6 +145,10 @@ contract DSCEngineTest is Test {
         assertEq(engine.getAmountMinted(BOB), AMOUNT_TO_MINT);
     }
 
+    /**
+     * @notice Tests that minting an amount of DSC that would break the health
+     * factor reverts with the correct custom error.
+     */
     function testMintRevertsIfHealthFactorBreaks() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -143,6 +159,10 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice Tests that attempting to liquidate a user whose health factor
+     * is above the minimum reverts with the correct custom error.
+     */
     function testLiquidateReturnsIfHealthFactorIsOk() public {
         vm.startPrank(BOB);
         ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
@@ -157,6 +177,10 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice Tests that attempting to liquidate with a zero debt amount
+     * reverts with the correct custom error.
+     */
     function testLiquidateRevertsIfAmountIsZero() public {
         vm.startPrank(ALICE);
         vm.expectRevert(DSCEngine.DSCEngine__AmountShouldBeMoreThanZero.selector);
@@ -164,6 +188,13 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
     }
 
+    /**
+     * @notice Tests that a liquidator receives the correct amount of collateral
+     * plus the 10% liquidation bonus after liquidating an undercollateralised user.
+     * @dev BOB deposits and mints DSC. ALICE deposits and mints DSC before the
+     * price crash. ETH price is crashed to make BOB undercollateralised.
+     * ALICE liquidates BOB and receives BOB's collateral plus bonus.
+     */
     function testLiquidatorReceivesCollateralPlusBonus() public {
         // BOB deposits and mints
         vm.startPrank(BOB);
@@ -180,7 +211,6 @@ contract DSCEngineTest is Test {
         vm.stopPrank();
 
         // NOW crash the price — both BOB and ALICE are affected
-        // but ALICE already has her DSC to use as liquidator
         int256 crashedEthPrice = 18e8;
         MockV3Aggregator(wethUsdPriceFeed).updateAnswer(crashedEthPrice);
 
@@ -195,6 +225,12 @@ contract DSCEngineTest is Test {
         assert(aliceWethBalanceAfter > aliceWethBalanceBefore);
     }
 
+    /**
+     * @notice Tests that liquidating an undercollateralised user improves
+     * their health factor.
+     * @dev BOB's health factor is recorded before liquidation and compared
+     * against the health factor after ALICE liquidates his position.
+     */
     function testLiquidationImprovesHealthFactor() public {
         // Arrange — BOB deposits and mints to the limit
         vm.startPrank(BOB);
@@ -224,6 +260,10 @@ contract DSCEngineTest is Test {
         assert(bobHealthFactorAfter > bobHealthFactorBefore);
     }
 
+    /**
+     * @notice Tests that liquidating an undercollateralised user correctly
+     * reduces their outstanding DSC debt.
+     */
     function testLiquidationReducesBobsDebt() public {
         // Arrange — BOB deposits and mints
         vm.startPrank(BOB);
