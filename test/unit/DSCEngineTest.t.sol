@@ -439,8 +439,8 @@ contract DSCEngineTest is Test {
     }
 
     /**
-     * @notice Tests that getHealthFactor returns a value at or above the
-     * minimum health factor after a user mints within safe limits.
+     * @notice Tests that getAmountMinted returns zero for a user that has
+     * not minted any DSC.
      */
     function testGetAmountMintedReturnsZeroByDefault() public view {
         assertEq(engine.getAmountMinted(BOB), 0);
