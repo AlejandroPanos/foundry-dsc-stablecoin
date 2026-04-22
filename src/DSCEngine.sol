@@ -404,7 +404,7 @@ contract DSCEngine is ReentrancyGuard {
      * to liquidation.
      * @param user The user for which we want to check the health factor.
      */
-    function _revertIfHealthFactorIsBroken(address user) internal {
+    function _revertIfHealthFactorIsBroken(address user) internal view {
         uint256 healthFactor = _healthFactor(user);
         if (healthFactor < MIN_HEALTH_FACTOR) {
             revert DSCEngine__HealthFactorBelowMinimum();
