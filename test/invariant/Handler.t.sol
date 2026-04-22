@@ -140,6 +140,10 @@ contract Handler is Test {
     }
 
     /* Getter functions */
+    /**
+     * @notice This function exposes the array of users that have deposited collateral.
+     * @return address[] The array of addresses that have deposited collateral.
+     */
     function getUsersWithCollateralDeposited() external view returns (address[] memory) {
         return usersWithCollateralDeposited;
     }
