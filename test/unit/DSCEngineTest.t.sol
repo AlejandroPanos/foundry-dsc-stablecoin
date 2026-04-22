@@ -211,4 +211,30 @@ contract DSCEngineTest is Test {
         // Assert health factor improved
         assert(bobHealthFactorAfter > bobHealthFactorBefore);
     }
+
+    function testLiquidationReducesBobsDebt() public {
+        // Arrange — BOB deposits and mints
+        vm.startPrank(BOB);
+        ERC20Mock(weth).approve(address(engine), AMOUNT_COLLATERAL);
+        engine.depositCollateral(weth, AMOUNT_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        // Crash the price
+        int256 crashedEthPrice = 18e8;
+        MockV3Aggregator(wethUsdPriceFeed).updateAnswer(crashedEthPrice);
+
+        // ALICE liquidates BOB
+        vm.startPrank(ALICE);
+        ERC20Mock(weth).approve(address(engine), ALICE_COLLATERAL);
+        engine.depositCollateral(weth, ALICE_COLLATERAL);
+        engine.mintDsc(AMOUNT_TO_MINT);
+        dsc.approve(address(engine), AMOUNT_TO_MINT);
+        engine.liquidate(weth, BOB, AMOUNT_TO_MINT);
+        vm.stopPrank();
+
+        // Assert BOB's minted balance decreased
+        (uint256 bobDebtAfter,) = engine.getAccountInformation(BOB);
+        assert(bobDebtAfter < AMOUNT_TO_MINT);
+    }
 }
