@@ -23,7 +23,7 @@ contract Handler is Test {
     address[] public usersWithCollateralDeposited;
     MockV3Aggregator public ethUsdPriceFeed;
 
-    uint256 MAX_DEPOSIT_SIZE = type(uint256).max;
+    uint256 MAX_DEPOSIT_SIZE = type(uint96).max;
 
     /* Constructor */
     constructor(DSCEngine _engine, DecentralisedStableCoin _dsc) {
