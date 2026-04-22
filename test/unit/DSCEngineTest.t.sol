@@ -16,14 +16,27 @@ contract DSCEngineTest is Test {
     HelperConfig helperConfig;
 
     /* State variables */
-    address ethUsdPriceFeed;
-    address btcUsdPriceFeed;
+    address wethUsdPriceFeed;
+    address wbtcUsdPriceFeed;
     address weth;
 
     address public USER = makeAddr("USER");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
+    HelperConfig.NetworkConfig config;
 
     address[] public tokenAddresses;
     address[] public priceFeedAddresses;
+
+    /* Set up function */
+    function setUp() external {
+        deployer = new DeployDSC();
+        (dsc, engine, helperConfig) = deployer.run();
+        config = helperConfig.getActiveNetworkConfig();
+        wethUsdPriceFeed = config.wethUsdPriceFeed;
+        wbtcUsdPriceFeed = config.wbtcUsdPriceFeed;
+        weth = config.weth;
+
+        ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
+    }
 }
