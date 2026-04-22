@@ -19,6 +19,7 @@ contract DSCEngineTest is Test {
     address wethUsdPriceFeed;
     address wbtcUsdPriceFeed;
     address weth;
+    address wbtc;
 
     address public USER = makeAddr("USER");
     uint256 public constant AMOUNT_COLLATERAL = 10 ether;
@@ -36,6 +37,7 @@ contract DSCEngineTest is Test {
         wethUsdPriceFeed = config.wethUsdPriceFeed;
         wbtcUsdPriceFeed = config.wbtcUsdPriceFeed;
         weth = config.weth;
+        wbtc = config.wbtc;
 
         ERC20Mock(weth).mint(USER, STARTING_ERC20_BALANCE);
     }
@@ -50,5 +52,16 @@ contract DSCEngineTest is Test {
 
         vm.expectRevert(DSCEngine.DSCEngine__AddressesMustBeOfSameLength.selector);
         new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+    }
+
+    function testConstructorAddsToArray() public {
+        tokenAddresses.push(weth);
+        tokenAddresses.push(wbtc);
+        priceFeedAddresses.push(wethUsdPriceFeed);
+        priceFeedAddresses.push(wbtcUsdPriceFeed);
+
+        new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
+
+        assertEq(engine.getCollateralTokens().length, 2);
     }
 }
