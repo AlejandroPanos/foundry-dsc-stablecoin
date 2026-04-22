@@ -117,7 +117,9 @@ contract Handler is Test {
         ERC20Mock collateral = _getCollateralFromSeed(collateralSeed);
         uint256 maxCollateralToRedeem = engine.getCollateralBalanceOfUser(msg.sender, address(collateral));
 
-        if (maxCollateralToRedeem == 0) return;
+        if (maxCollateralToRedeem == 0) {
+            return;
+        }
 
         amountCollateral = bound(amountCollateral, 1, maxCollateralToRedeem);
 
