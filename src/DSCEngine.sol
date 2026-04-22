@@ -455,4 +455,13 @@ contract DSCEngine is ReentrancyGuard {
     function getCollateralTokenPriceFeed(address token) external view returns (address) {
         return s_tokenToPriceFeed[token];
     }
+
+    /**
+     * @notice Returns the health factor from a user.
+     * @param user The user we want to get the health factor of.
+     * @return uint256 The health factor from the user.
+     */
+    function getHealthFactor(address user) external view returns (uint256) {
+        return _healthFactor(user);
+    }
 }
