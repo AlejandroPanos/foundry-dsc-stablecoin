@@ -28,7 +28,7 @@ contract DSCEngineTest is Test {
     uint256 private constant ALICE_COLLATERAL = 100 ether;
     uint256 public constant STARTING_ERC20_BALANCE = 10 ether;
     uint256 public constant AMOUNT_TO_MINT = 100e18;
-    uint256 private constant AMOUNT_TO_MINT_TOO_HIGH = 12_000e18; // just over the limit
+    uint256 private constant AMOUNT_TO_MINT_TOO_HIGH = 12_000e18;
 
     HelperConfig.NetworkConfig config;
 
@@ -56,6 +56,10 @@ contract DSCEngineTest is Test {
     /* ============================================================ */
     /* Constructor Tests                                            */
     /* ============================================================ */
+    /**
+     * @notice Tests that the constructor reverts when token and price feed
+     * arrays are of different lengths.
+     */
     function testRevertsIfLegthsAreNotEqual() public {
         tokenAddresses.push(weth);
         priceFeedAddresses.push(wethUsdPriceFeed);
@@ -65,6 +69,10 @@ contract DSCEngineTest is Test {
         new DSCEngine(tokenAddresses, priceFeedAddresses, address(dsc));
     }
 
+    /**
+     * @notice Tests that the constructor correctly maps each token address
+     * to its corresponding Chainlink price feed address.
+     */
     function testConstructorAddsToMapping() public {
         tokenAddresses.push(weth);
         tokenAddresses.push(wbtc);
@@ -77,6 +85,10 @@ contract DSCEngineTest is Test {
         assertEq(engine.getCollateralTokenPriceFeed(wbtc), priceFeedAddresses[1]);
     }
 
+    /**
+     * @notice Tests that the constructor correctly populates the collateral
+     * tokens array with the provided token addresses.
+     */
     function testConstructorAddsToArray() public {
         tokenAddresses.push(weth);
         tokenAddresses.push(wbtc);
